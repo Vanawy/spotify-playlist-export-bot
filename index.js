@@ -2,8 +2,13 @@ const { Telegraf } = require('telegraf');
 const dotenv = require('dotenv');
 const axios = require('axios');
 dotenv.config();
+const stats = require('telegraf-statsd');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
+bot.use(stats({
+    host: process.env.STATSD_HOST,
+    prefix: 'spotify_bot' + process.env.ENV
+}));
 
 const helpText = "Just send me link to a public Spotify playlist or album 🎵";
 
