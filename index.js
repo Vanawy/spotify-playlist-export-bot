@@ -58,7 +58,7 @@ bot.on('text', ctx => {
                         }
                         result.push([authors, track.name, Math.floor(track.duration_ms / 1000)])
                     }
-                    ctx.reply(printResult(result));
+                    paginateResult(ctx, result);
                 })
                 .catch(function(response) {
                     ctx.reply("Spotify returns error")
@@ -99,16 +99,20 @@ function base64(data) {
     return Buffer.from(data).toString('base64');
 }
 
-function printResult(result) {
-    let string = "";
-    for (let track of result) {
-        string += `${track[0].join(", ")} - ${track[1]} (${printDuration(track[2])})\n\r`;
-    }
-    return string;
-}
-
 function printDuration(seconds) {
     let m = Math.floor(seconds / 60);
     let s = seconds - m * 60;
     return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+async function paginateResult(ctx, result) {
+    let string = "";
+    for (let track of result) {
+        string += `${track[0].join(", ")} - ${track[1]} (${printDuration(track[2])})\n\r`;
+        if (string.length > 4000) {
+            await ctx.reply(string);
+            string = "";
+        }
+    }
+    await ctx.reply(string);
 }
