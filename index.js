@@ -22,6 +22,7 @@ bot.on('text', ctx => {
         ctx.reply(helpText);
         return;
     }
+    const isAlbum = url.pathname.search(/^\/album/) != -1;
     axios({
             method: 'post',
             url: 'https://accounts.spotify.com/api/token',
@@ -36,37 +37,31 @@ bot.on('text', ctx => {
         .then(function(response) {
             const token = response.data.access_token;
             const type = response.data.token_type;
-            const isAlbum = url.pathname.search(/^\/album/) != -1;
             const id = url.pathname.replace(/^\/(album|playlist)\//i, "");
             console.log(`Fetching ${isAlbum ? 'album' : 'playlist'} ${id}`);
-            axios
-                .get(`https://api.spotify.com/v1/${isAlbum ? 'albums' : 'playlists'}/${id}/tracks`, {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Authorization': `${type} ${token}`,
-                    }
-                })
-                .then(function(response) {
-                    let result = [];
-                    for (let track of response.data.items) {
-                        if (!isAlbum) {
-                            track = track.track;
-                        }
-                        let authors = [];
-                        for (let artist of track.artists) {
-                            authors.push(artist.name);
-                        }
-                        result.push([authors, track.name, Math.floor(track.duration_ms / 1000)])
-                    }
-                    paginateResult(ctx, result);
-                })
-                .catch(function(response) {
-                    ctx.reply("Spotify returns error")
-                    console.error(response);
-                });
+            return axios.get(`https://api.spotify.com/v1/${isAlbum ? 'albums' : 'playlists'}/${id}/tracks`, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `${type} ${token}`,
+                }
+            });
+        })
+        .then(function(response) {
+            let result = [];
+            for (let track of response.data.items) {
+                if (!isAlbum) {
+                    track = track.track;
+                }
+                let authors = [];
+                for (let artist of track.artists) {
+                    authors.push(artist.name);
+                }
+                result.push([authors, track.name, Math.floor(track.duration_ms / 1000)])
+            }
+            paginateResult(ctx, result);
         })
         .catch(function(response) {
-            ctx.reply("Spotify authorization error :c")
+            ctx.reply("Spotify returns error")
             console.error(response);
         });
 });
